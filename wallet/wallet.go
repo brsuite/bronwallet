@@ -178,7 +178,7 @@ func (w *Wallet) SynchronizeRPC(chainClient chain.Interface) {
 	switch cc := chainClient.(type) {
 	case *chain.NeutrinoClient:
 		cc.SetStartTime(w.Manager.Birthday())
-	case *chain.BitcoindClient:
+	case *chain.BrocoindClient:
 		cc.SetBirthday(w.Manager.Birthday())
 	}
 	w.chainClientLock.Unlock()
@@ -269,7 +269,7 @@ func (w *Wallet) WaitForShutdown() {
 }
 
 // SynchronizingToNetwork returns whether the wallet is currently synchronizing
-// with the Bitcoin network.
+// with the Brocoin network.
 func (w *Wallet) SynchronizingToNetwork() bool {
 	// At the moment, RPC is the only synchronization method.  In the
 	// future, when SPV is added, a separate check will also be needed, or
@@ -1545,7 +1545,7 @@ func (w *Wallet) CalculateAccountBalances(account uint32, confirms int32) (Balan
 	return bals, err
 }
 
-// CurrentAddress gets the most recently requested Bitcoin payment address
+// CurrentAddress gets the most recently requested Brocoin payment address
 // from a wallet for a particular key-chain scope.  If the address has already
 // been used (there is at least one transaction spending to it in the
 // blockchain or brond mempool), the next chained address is returned.
@@ -2187,7 +2187,7 @@ func (w *Wallet) GetTransactions(startBlock, endBlock *BlockIdentifier, cancel <
 			switch client := chainClient.(type) {
 			case *chain.RPCClient:
 				startResp = client.GetBlockVerboseTxAsync(startBlock.hash)
-			case *chain.BitcoindClient:
+			case *chain.BrocoindClient:
 				var err error
 				start, err = client.GetBlockHeight(startBlock.hash)
 				if err != nil {
@@ -3017,7 +3017,7 @@ type AccountTotalReceivedResult struct {
 }
 
 // TotalReceivedForAccounts iterates through a wallet's transaction history,
-// returning the total amount of Bitcoin received for all accounts.
+// returning the total amount of Brocoin received for all accounts.
 func (w *Wallet) TotalReceivedForAccounts(scope waddrmgr.KeyScope,
 	minConf int32) ([]AccountTotalReceivedResult, error) {
 
@@ -3086,7 +3086,7 @@ func (w *Wallet) TotalReceivedForAccounts(scope waddrmgr.KeyScope,
 }
 
 // TotalReceivedForAddr iterates through a wallet's transaction history,
-// returning the total amount of bitcoins received for a single wallet
+// returning the total amount of brocoins received for a single wallet
 // address.
 func (w *Wallet) TotalReceivedForAddr(addr bronutil.Address, minConf int32) (bronutil.Amount, error) {
 	var amount bronutil.Amount
@@ -3457,9 +3457,9 @@ func (w *Wallet) publishTransaction(tx *wire.MsgTx) (*chainhash.Hash, error) {
 	case match(err, "already have transaction"):
 		fallthrough
 
-	// This error is returned when broadcasting a transaction to a bitcoind
+	// This error is returned when broadcasting a transaction to a brocoind
 	// node that already has it in their mempool.
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L590
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L590
 	case match(err, "txn-already-in-mempool"):
 		return &txid, nil
 
@@ -3469,9 +3469,9 @@ func (w *Wallet) publishTransaction(tx *wire.MsgTx) (*chainhash.Hash, error) {
 	// in a sense successful.
 	//
 	// This error is returned when sending a transaction that has already
-	// confirmed to a brond/bitcoind node over RPC.
+	// confirmed to a brond/brocoind node over RPC.
 	// https://github.com/brsuite/brond/blob/130ea5bddde33df32b06a1cdb42a6316eb73cff5/rpcserver.go#L3355
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/node/transaction.cpp#L36
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/node/transaction.cpp#L36
 	case rpcTxConfirmed:
 		fallthrough
 
@@ -3482,8 +3482,8 @@ func (w *Wallet) publishTransaction(tx *wire.MsgTx) (*chainhash.Hash, error) {
 		fallthrough
 
 	// This error is returned when broadcasting a transaction that has
-	// already confirmed to a bitcoind node over the P2P network.
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L648
+	// already confirmed to a brocoind node over the P2P network.
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L648
 	case match(err, "txn-already-known"):
 		dbErr := walletdb.Update(w.db, func(dbTx walletdb.ReadWriteTx) error {
 			txmgrNs := dbTx.ReadWriteBucket(wtxmgrNamespaceKey)
@@ -3524,43 +3524,43 @@ func (w *Wallet) publishTransaction(tx *wire.MsgTx) (*chainhash.Hash, error) {
 	case match(err, "orphan transaction"):
 		fallthrough
 
-	// Error returned from bitcoind when output was spent by other
+	// Error returned from brocoind when output was spent by other
 	// non-replacable transaction already in the mempool.
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L622
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L622
 	case match(err, "txn-mempool-conflict"):
 		fallthrough
 
-	// Returned by bitcoind on the RPC when broadcasting a transaction that
+	// Returned by brocoind on the RPC when broadcasting a transaction that
 	// is spending either output that is missing or already spent.
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/node/transaction.cpp#L49
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/node/transaction.cpp#L49
 	case match(err, "missing inputs"):
 		returnErr = &ErrDoubleSpend{
 			backendError: err,
 		}
 
-	// Returned by bitcoind if the transaction spends outputs that would be
+	// Returned by brocoind if the transaction spends outputs that would be
 	// replaced by it.
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L790
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L790
 	case match(err, "bad-txns-spends-conflicting-tx"):
 		fallthrough
 
-	// Returned by bitcoind when a replacement transaction did not have
+	// Returned by brocoind when a replacement transaction did not have
 	// enough fee.
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L830
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L894
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L904
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L830
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L894
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L904
 	case match(err, "insufficient fee"):
 		fallthrough
 
-	// Returned by bitcoind in case the transaction would replace too many
+	// Returned by brocoind in case the transaction would replace too many
 	// transaction in the mempool.
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L858
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L858
 	case match(err, "too many potential replacements"):
 		fallthrough
 
-	// Returned by bitcoind if the transaction spends an output that is
+	// Returned by brocoind if the transaction spends an output that is
 	// unconfimed and not spent by the transaction it replaces.
-	// https://github.com/bitcoin/bitcoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L882
+	// https://github.com/brocoin/brocoin/blob/9bf5768dd628b3a7c30dd42b5ed477a92c4d3540/src/validation.cpp#L882
 	case match(err, "replacement-adds-unconfirmed"):
 		fallthrough
 

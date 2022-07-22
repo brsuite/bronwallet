@@ -254,7 +254,7 @@ func TestChaining(t *testing.T) {
 			return
 		}
 
-		// Public keys (used to generate the bitcoin address) MUST match.
+		// Public keys (used to generate the brocoin address) MUST match.
 		if !bytes.Equal(nextPubUncompressedFromPriv, nextPubUncompressedFromPub) {
 			t.Errorf("%s: Uncompressed public keys do not match.", test.name)
 		}

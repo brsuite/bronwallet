@@ -49,11 +49,11 @@ Changes in 0.6.0 (Wed May 27 2015)
       - All accounts (with the exception of the imported account) may be
         renamed using the renameaccount RPC
       - RPC requests with an unspecified account that default to the unnamed
-        account in Bitcoin Core Wallet default to "default", the name of the
+        account in Brocoin Core Wallet default to "default", the name of the
         initial account
       - Several RPCs with account parameters do not work with bronwallet
         accounts due to concerns over expectations of API compatibility with
-        Bitcoin Core Wallet.  A new RPC API is being planned to rectify this
+        Brocoin Core Wallet.  A new RPC API is being planned to rectify this
         (#220).
     - Store transactions, transaction history, and spend tracking in the
       database (#217, #234)
@@ -190,7 +190,7 @@ Changes in 0.5.0 (Tue Mar 03 2015)
       - Includes amounts (total spendable, total needed, and fee) in all
         insufficient funds errors
     - Add support for simnet, the private simulation test network
-    - Implement the following Bitcoin Core RPCs:
+    - Implement the following Brocoin Core RPCs:
       - listreceivedbyaddress (#53)
       - lockunspent, listlockunspent (#50, #55)
       - getreceivedbyaddress
@@ -296,7 +296,7 @@ Changes in 0.5.0 (Tue Mar 03 2015)
       (e.g. ~/.bronwallet/logs/testnet3) to match brond behavior (#114)
 
 Changes in 0.4.0 (Sun May 25 2014)
-  - Implement the following standard bitcoin server RPC requests:
+  - Implement the following standard brocoin server RPC requests:
     - signmessage (https://github.com/conformal/bronwallet/issues/58)
     - verifymessage (https://github.com/conformal/bronwallet/issues/61)
     - listunspent (https://github.com/conformal/bronwallet/issues/54)
@@ -391,7 +391,7 @@ Changes in 0.3.0 (Mon Feb 10 2014)
   - Add disallowfree configuration option (default false) to force adding
     the minimum fee to all outbound transactions
 
-  - Implement the following standard bitcoin server RPC requests:
+  - Implement the following standard brocoin server RPC requests:
     - getinfo (https://github.com/conformal/bronwallet/issues/63)
     - getrawchangeaddress (https://github.com/conformal/bronwallet/issues/41)
     - getreceivedbyaccount (https://github.com/conformal/bronwallet/issues/42)
@@ -469,7 +469,7 @@ Changes in 0.2.0 (Thu Jan 09 2014)
   - Detect and rollback saved tx/utxo info after brond performs blockchain
     reorganizations while bronwallet was disconnected
 
-  - Add support for the following standard bitcoin JSON-RPC calls:
+  - Add support for the following standard brocoin JSON-RPC calls:
     - dumpprivkey (https://github.com/conformal/bronwallet/issues/9)
     - getaccount
     - getaccountaddress
@@ -497,7 +497,7 @@ Changes in 0.2.0 (Thu Jan 09 2014)
     can replace a currently-existing file
     (https://github.com/conformal/bronwallet/issues/20)
 
-  - Move account files to a single directory per bitcoin network to
+  - Move account files to a single directory per brocoin network to
     prevent a future scaling issue
     (https://github.com/conformal/bronwallet/issues/16)
 

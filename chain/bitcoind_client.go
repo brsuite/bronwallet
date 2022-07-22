@@ -20,15 +20,15 @@ import (
 )
 
 var (
-	// ErrBitcoindClientShuttingDown is an error returned when we attempt
-	// to receive a notification for a specific item and the bitcoind client
+	// ErrBrocoindClientShuttingDown is an error returned when we attempt
+	// to receive a notification for a specific item and the brocoind client
 	// is in the middle of shutting down.
-	ErrBitcoindClientShuttingDown = errors.New("client is shutting down")
+	ErrBrocoindClientShuttingDown = errors.New("client is shutting down")
 )
 
-// BitcoindClient represents a persistent client connection to a bitcoind server
+// BrocoindClient represents a persistent client connection to a brocoind server
 // for information regarding the current best block chain.
-type BitcoindClient struct {
+type BrocoindClient struct {
 	// notifyBlocks signals whether the client is sending block
 	// notifications to the caller. This must be used atomically.
 	notifyBlocks uint32
@@ -44,13 +44,13 @@ type BitcoindClient struct {
 	// active under.
 	chainParams *chaincfg.Params
 
-	// id is the unique ID of this client assigned by the backing bitcoind
+	// id is the unique ID of this client assigned by the backing brocoind
 	// connection.
 	id uint64
 
 	// chainConn is the backing client to our rescan client that contains
-	// the RPC and ZMQ connections to a bitcoind node.
-	chainConn *BitcoindConn
+	// the RPC and ZMQ connections to a brocoind node.
+	chainConn *BrocoindConn
 
 	// bestBlock keeps track of the tip of the current best chain.
 	bestBlockMtx sync.RWMutex
@@ -97,28 +97,28 @@ type BitcoindClient struct {
 	notificationQueue *ConcurrentQueue
 
 	// zmqTxNtfns is a channel through which ZMQ transaction events will be
-	// retrieved from the backing bitcoind connection.
+	// retrieved from the backing brocoind connection.
 	zmqTxNtfns chan *wire.MsgTx
 
 	// zmqBlockNtfns is a channel through which ZMQ block events will be
-	// retrieved from the backing bitcoind connection.
+	// retrieved from the backing brocoind connection.
 	zmqBlockNtfns chan *wire.MsgBlock
 
 	quit chan struct{}
 	wg   sync.WaitGroup
 }
 
-// A compile-time check to ensure that BitcoindClient satisfies the
+// A compile-time check to ensure that BrocoindClient satisfies the
 // chain.Interface interface.
-var _ Interface = (*BitcoindClient)(nil)
+var _ Interface = (*BrocoindClient)(nil)
 
 // BackEnd returns the name of the driver.
-func (c *BitcoindClient) BackEnd() string {
-	return "bitcoind"
+func (c *BrocoindClient) BackEnd() string {
+	return "brocoind"
 }
 
-// GetBestBlock returns the highest block known to bitcoind.
-func (c *BitcoindClient) GetBestBlock() (*chainhash.Hash, int32, error) {
+// GetBestBlock returns the highest block known to brocoind.
+func (c *BrocoindClient) GetBestBlock() (*chainhash.Hash, int32, error) {
 	bcinfo, err := c.chainConn.client.GetBlockChainInfo()
 	if err != nil {
 		return nil, 0, err
@@ -134,7 +134,7 @@ func (c *BitcoindClient) GetBestBlock() (*chainhash.Hash, int32, error) {
 
 // GetBlockHeight returns the height for the hash, if known, or returns an
 // error.
-func (c *BitcoindClient) GetBlockHeight(hash *chainhash.Hash) (int32, error) {
+func (c *BrocoindClient) GetBlockHeight(hash *chainhash.Hash) (int32, error) {
 	header, err := c.chainConn.client.GetBlockHeaderVerbose(hash)
 	if err != nil {
 		return 0, err
@@ -144,31 +144,31 @@ func (c *BitcoindClient) GetBlockHeight(hash *chainhash.Hash) (int32, error) {
 }
 
 // GetBlock returns a block from the hash.
-func (c *BitcoindClient) GetBlock(hash *chainhash.Hash) (*wire.MsgBlock, error) {
+func (c *BrocoindClient) GetBlock(hash *chainhash.Hash) (*wire.MsgBlock, error) {
 	return c.chainConn.client.GetBlock(hash)
 }
 
 // GetBlockVerbose returns a verbose block from the hash.
-func (c *BitcoindClient) GetBlockVerbose(
+func (c *BrocoindClient) GetBlockVerbose(
 	hash *chainhash.Hash) (*btcjson.GetBlockVerboseResult, error) {
 
 	return c.chainConn.client.GetBlockVerbose(hash)
 }
 
 // GetBlockHash returns a block hash from the height.
-func (c *BitcoindClient) GetBlockHash(height int64) (*chainhash.Hash, error) {
+func (c *BrocoindClient) GetBlockHash(height int64) (*chainhash.Hash, error) {
 	return c.chainConn.client.GetBlockHash(height)
 }
 
 // GetBlockHeader returns a block header from the hash.
-func (c *BitcoindClient) GetBlockHeader(
+func (c *BrocoindClient) GetBlockHeader(
 	hash *chainhash.Hash) (*wire.BlockHeader, error) {
 
 	return c.chainConn.client.GetBlockHeader(hash)
 }
 
 // GetBlockHeaderVerbose returns a block header from the hash.
-func (c *BitcoindClient) GetBlockHeaderVerbose(
+func (c *BrocoindClient) GetBlockHeaderVerbose(
 	hash *chainhash.Hash) (*btcjson.GetBlockHeaderVerboseResult, error) {
 
 	return c.chainConn.client.GetBlockHeaderVerbose(hash)
@@ -176,7 +176,7 @@ func (c *BitcoindClient) GetBlockHeaderVerbose(
 
 // IsCurrent returns whether the chain backend considers its view of the network
 // as "current".
-func (c *BitcoindClient) IsCurrent() bool {
+func (c *BrocoindClient) IsCurrent() bool {
 	bestHash, _, err := c.GetBestBlock()
 	if err != nil {
 		return false
@@ -189,21 +189,21 @@ func (c *BitcoindClient) IsCurrent() bool {
 }
 
 // GetRawTransactionVerbose returns a transaction from the tx hash.
-func (c *BitcoindClient) GetRawTransactionVerbose(
+func (c *BrocoindClient) GetRawTransactionVerbose(
 	hash *chainhash.Hash) (*btcjson.TxRawResult, error) {
 
 	return c.chainConn.client.GetRawTransactionVerbose(hash)
 }
 
 // GetTxOut returns a txout from the outpoint info provided.
-func (c *BitcoindClient) GetTxOut(txHash *chainhash.Hash, index uint32,
+func (c *BrocoindClient) GetTxOut(txHash *chainhash.Hash, index uint32,
 	mempool bool) (*btcjson.GetTxOutResult, error) {
 
 	return c.chainConn.client.GetTxOut(txHash, index, mempool)
 }
 
-// SendRawTransaction sends a raw transaction via bitcoind.
-func (c *BitcoindClient) SendRawTransaction(tx *wire.MsgTx,
+// SendRawTransaction sends a raw transaction via brocoind.
+func (c *BrocoindClient) SendRawTransaction(tx *wire.MsgTx,
 	allowHighFees bool) (*chainhash.Hash, error) {
 
 	return c.chainConn.client.SendRawTransaction(tx, allowHighFees)
@@ -212,7 +212,7 @@ func (c *BitcoindClient) SendRawTransaction(tx *wire.MsgTx,
 // Notifications returns a channel to retrieve notifications from.
 //
 // NOTE: This is part of the chain.Interface interface.
-func (c *BitcoindClient) Notifications() <-chan interface{} {
+func (c *BrocoindClient) Notifications() <-chan interface{} {
 	return c.notificationQueue.ChanOut()
 }
 
@@ -220,13 +220,13 @@ func (c *BitcoindClient) Notifications() <-chan interface{} {
 // transaction pays to any of the given addresses.
 //
 // NOTE: This is part of the chain.Interface interface.
-func (c *BitcoindClient) NotifyReceived(addrs []bronutil.Address) error {
+func (c *BrocoindClient) NotifyReceived(addrs []bronutil.Address) error {
 	c.NotifyBlocks()
 
 	select {
 	case c.rescanUpdate <- addrs:
 	case <-c.quit:
-		return ErrBitcoindClientShuttingDown
+		return ErrBrocoindClientShuttingDown
 	}
 
 	return nil
@@ -234,13 +234,13 @@ func (c *BitcoindClient) NotifyReceived(addrs []bronutil.Address) error {
 
 // NotifySpent allows the chain backend to notify the caller whenever a
 // transaction spends any of the given outpoints.
-func (c *BitcoindClient) NotifySpent(outPoints []*wire.OutPoint) error {
+func (c *BrocoindClient) NotifySpent(outPoints []*wire.OutPoint) error {
 	c.NotifyBlocks()
 
 	select {
 	case c.rescanUpdate <- outPoints:
 	case <-c.quit:
-		return ErrBitcoindClientShuttingDown
+		return ErrBrocoindClientShuttingDown
 	}
 
 	return nil
@@ -248,13 +248,13 @@ func (c *BitcoindClient) NotifySpent(outPoints []*wire.OutPoint) error {
 
 // NotifyTx allows the chain backend to notify the caller whenever any of the
 // given transactions confirm within the chain.
-func (c *BitcoindClient) NotifyTx(txids []chainhash.Hash) error {
+func (c *BrocoindClient) NotifyTx(txids []chainhash.Hash) error {
 	c.NotifyBlocks()
 
 	select {
 	case c.rescanUpdate <- txids:
 	case <-c.quit:
-		return ErrBitcoindClientShuttingDown
+		return ErrBrocoindClientShuttingDown
 	}
 
 	return nil
@@ -264,7 +264,7 @@ func (c *BitcoindClient) NotifyTx(txids []chainhash.Hash) error {
 // is connected or disconnected.
 //
 // NOTE: This is part of the chain.Interface interface.
-func (c *BitcoindClient) NotifyBlocks() error {
+func (c *BrocoindClient) NotifyBlocks() error {
 	// We'll guard the goroutine being spawned below by the notifyBlocks
 	// variable we'll use atomically. We'll make sure to reset it in case of
 	// a failure before spawning the goroutine so that it can be retried.
@@ -294,7 +294,7 @@ func (c *BitcoindClient) NotifyBlocks() error {
 	c.bestBlockMtx.Unlock()
 
 	// Include the client in the set of rescan clients of the backing
-	// bitcoind connection in order to receive ZMQ event notifications for
+	// brocoind connection in order to receive ZMQ event notifications for
 	// new blocks and transactions.
 	c.chainConn.AddClient(c)
 
@@ -306,7 +306,7 @@ func (c *BitcoindClient) NotifyBlocks() error {
 
 // shouldNotifyBlocks determines whether the client should send block
 // notifications to the caller.
-func (c *BitcoindClient) shouldNotifyBlocks() bool {
+func (c *BrocoindClient) shouldNotifyBlocks() bool {
 	return atomic.LoadUint32(&c.notifyBlocks) == 1
 }
 
@@ -321,12 +321,12 @@ func (c *BitcoindClient) shouldNotifyBlocks() bool {
 //	map[wire.OutPoint]bronutil.Address
 //	[]chainhash.Hash
 //	[]*chainhash.Hash
-func (c *BitcoindClient) LoadTxFilter(reset bool, filters ...interface{}) error {
+func (c *BrocoindClient) LoadTxFilter(reset bool, filters ...interface{}) error {
 	if reset {
 		select {
 		case c.rescanUpdate <- struct{}{}:
 		case <-c.quit:
-			return ErrBitcoindClientShuttingDown
+			return ErrBrocoindClientShuttingDown
 		}
 	}
 
@@ -334,7 +334,7 @@ func (c *BitcoindClient) LoadTxFilter(reset bool, filters ...interface{}) error 
 		select {
 		case c.rescanUpdate <- filter:
 		case <-c.quit:
-			return ErrBitcoindClientShuttingDown
+			return ErrBrocoindClientShuttingDown
 		}
 
 		return nil
@@ -366,14 +366,14 @@ func (c *BitcoindClient) LoadTxFilter(reset bool, filters ...interface{}) error 
 
 // RescanBlocks rescans any blocks passed, returning only the blocks that
 // matched as []btcjson.BlockDetails.
-func (c *BitcoindClient) RescanBlocks(
+func (c *BrocoindClient) RescanBlocks(
 	blockHashes []chainhash.Hash) ([]btcjson.RescannedBlock, error) {
 
 	rescannedBlocks := make([]btcjson.RescannedBlock, 0, len(blockHashes))
 	for _, hash := range blockHashes {
 		header, err := c.GetBlockHeaderVerbose(&hash)
 		if err != nil {
-			log.Warnf("Unable to get header %s from bitcoind: %s",
+			log.Warnf("Unable to get header %s from brocoind: %s",
 				hash, err)
 			continue
 		}
@@ -386,7 +386,7 @@ func (c *BitcoindClient) RescanBlocks(
 
 		block, err := c.GetBlock(&hash)
 		if err != nil {
-			log.Warnf("Unable to get block %s from bitcoind: %s",
+			log.Warnf("Unable to get block %s from brocoind: %s",
 				hash, err)
 			continue
 		}
@@ -412,7 +412,7 @@ func (c *BitcoindClient) RescanBlocks(
 
 // Rescan rescans from the block with the given hash until the current block,
 // after adding the passed addresses and outpoints to the client's watch list.
-func (c *BitcoindClient) Rescan(blockHash *chainhash.Hash,
+func (c *BrocoindClient) Rescan(blockHash *chainhash.Hash,
 	addresses []bronutil.Address, outPoints map[wire.OutPoint]bronutil.Address) error {
 
 	// A block hash is required to use as the starting point of the rescan.
@@ -424,31 +424,31 @@ func (c *BitcoindClient) Rescan(blockHash *chainhash.Hash,
 	select {
 	case c.rescanUpdate <- addresses:
 	case <-c.quit:
-		return ErrBitcoindClientShuttingDown
+		return ErrBrocoindClientShuttingDown
 	}
 
 	select {
 	case c.rescanUpdate <- outPoints:
 	case <-c.quit:
-		return ErrBitcoindClientShuttingDown
+		return ErrBrocoindClientShuttingDown
 	}
 
 	// Once the filters have been updated, we can begin the rescan.
 	select {
 	case c.rescanUpdate <- *blockHash:
 	case <-c.quit:
-		return ErrBitcoindClientShuttingDown
+		return ErrBrocoindClientShuttingDown
 	}
 
 	return nil
 }
 
-// Start initializes the bitcoind rescan client using the backing bitcoind
+// Start initializes the brocoind rescan client using the backing brocoind
 // connection and starts all goroutines necessary in order to process rescans
 // and ZMQ notifications.
 //
 // NOTE: This is part of the chain.Interface interface.
-func (c *BitcoindClient) Start() error {
+func (c *BrocoindClient) Start() error {
 	if !atomic.CompareAndSwapInt32(&c.started, 0, 1) {
 		return nil
 	}
@@ -484,18 +484,18 @@ func (c *BitcoindClient) Start() error {
 	return nil
 }
 
-// Stop stops the bitcoind rescan client from processing rescans and ZMQ
+// Stop stops the brocoind rescan client from processing rescans and ZMQ
 // notifications.
 //
 // NOTE: This is part of the chain.Interface interface.
-func (c *BitcoindClient) Stop() {
+func (c *BrocoindClient) Stop() {
 	if !atomic.CompareAndSwapInt32(&c.stopped, 0, 1) {
 		return
 	}
 
 	close(c.quit)
 
-	// Remove this client's reference from the bitcoind connection to
+	// Remove this client's reference from the brocoind connection to
 	// prevent sending notifications to it after it's been stopped.
 	c.chainConn.RemoveClient(c.id)
 
@@ -506,7 +506,7 @@ func (c *BitcoindClient) Stop() {
 // handlers have exited.
 //
 // NOTE: This is part of the chain.Interface interface.
-func (c *BitcoindClient) WaitForShutdown() {
+func (c *BrocoindClient) WaitForShutdown() {
 	c.wg.Wait()
 }
 
@@ -514,7 +514,7 @@ func (c *BitcoindClient) WaitForShutdown() {
 // rescan.
 //
 // NOTE: This must be called as a goroutine.
-func (c *BitcoindClient) rescanHandler() {
+func (c *BrocoindClient) rescanHandler() {
 	defer c.wg.Done()
 
 	for {
@@ -592,10 +592,10 @@ func (c *BitcoindClient) rescanHandler() {
 }
 
 // ntfnHandler handles the logic to retrieve ZMQ notifications from the backing
-// bitcoind connection.
+// brocoind connection.
 //
 // NOTE: This must be called as a goroutine.
-func (c *BitcoindClient) ntfnHandler() {
+func (c *BrocoindClient) ntfnHandler() {
 	defer c.wg.Done()
 
 	for {
@@ -642,17 +642,17 @@ func (c *BitcoindClient) ntfnHandler() {
 	}
 }
 
-// SetBirthday sets the birthday of the bitcoind rescan client.
+// SetBirthday sets the birthday of the brocoind rescan client.
 //
 // NOTE: This should be done before the client has been started in order for it
 // to properly carry its duties.
-func (c *BitcoindClient) SetBirthday(t time.Time) {
+func (c *BrocoindClient) SetBirthday(t time.Time) {
 	c.birthday = t
 }
 
 // BlockStamp returns the latest block notified by the client, or an error
 // if the client has been shut down.
-func (c *BitcoindClient) BlockStamp() (*waddrmgr.BlockStamp, error) {
+func (c *BrocoindClient) BlockStamp() (*waddrmgr.BlockStamp, error) {
 	c.bestBlockMtx.RLock()
 	bestBlock := c.bestBlock
 	c.bestBlockMtx.RUnlock()
@@ -662,7 +662,7 @@ func (c *BitcoindClient) BlockStamp() (*waddrmgr.BlockStamp, error) {
 
 // onBlockConnected is a callback that's executed whenever a new block has been
 // detected. This will queue a BlockConnected notification to the caller.
-func (c *BitcoindClient) onBlockConnected(hash *chainhash.Hash, height int32,
+func (c *BrocoindClient) onBlockConnected(hash *chainhash.Hash, height int32,
 	timestamp time.Time) {
 
 	if c.shouldNotifyBlocks() {
@@ -684,7 +684,7 @@ func (c *BitcoindClient) onBlockConnected(hash *chainhash.Hash, height int32,
 // onBlockConnected, but it also includes a list of the relevant transactions
 // found within the block being connected. This will queue a
 // FilteredBlockConnected notification to the caller.
-func (c *BitcoindClient) onFilteredBlockConnected(height int32,
+func (c *BrocoindClient) onFilteredBlockConnected(height int32,
 	header *wire.BlockHeader, relevantTxs []*wtxmgr.TxRecord) {
 
 	if c.shouldNotifyBlocks() {
@@ -707,7 +707,7 @@ func (c *BitcoindClient) onFilteredBlockConnected(height int32,
 // onBlockDisconnected is a callback that's executed whenever a block has been
 // disconnected. This will queue a BlockDisconnected notification to the caller
 // with the details of the block being disconnected.
-func (c *BitcoindClient) onBlockDisconnected(hash *chainhash.Hash, height int32,
+func (c *BrocoindClient) onBlockDisconnected(hash *chainhash.Hash, height int32,
 	timestamp time.Time) {
 
 	if c.shouldNotifyBlocks() {
@@ -728,7 +728,7 @@ func (c *BitcoindClient) onBlockDisconnected(hash *chainhash.Hash, height int32,
 // to the caller. This means that the transaction matched a specific item in the
 // client's different filters. This will queue a RelevantTx notification to the
 // caller.
-func (c *BitcoindClient) onRelevantTx(tx *wtxmgr.TxRecord,
+func (c *BrocoindClient) onRelevantTx(tx *wtxmgr.TxRecord,
 	blockDetails *btcjson.BlockDetails) {
 
 	block, err := parseBlock(blockDetails)
@@ -750,7 +750,7 @@ func (c *BitcoindClient) onRelevantTx(tx *wtxmgr.TxRecord,
 // onRescanProgress is a callback that's executed whenever a rescan is in
 // progress. This will queue a RescanProgress notification to the caller with
 // the current rescan progress details.
-func (c *BitcoindClient) onRescanProgress(hash *chainhash.Hash, height int32,
+func (c *BrocoindClient) onRescanProgress(hash *chainhash.Hash, height int32,
 	timestamp time.Time) {
 
 	select {
@@ -766,7 +766,7 @@ func (c *BitcoindClient) onRescanProgress(hash *chainhash.Hash, height int32,
 // onRescanFinished is a callback that's executed whenever a rescan has
 // finished. This will queue a RescanFinished notification to the caller with
 // the details of the last block in the range of the rescan.
-func (c *BitcoindClient) onRescanFinished(hash *chainhash.Hash, height int32,
+func (c *BrocoindClient) onRescanFinished(hash *chainhash.Hash, height int32,
 	timestamp time.Time) {
 
 	select {
@@ -782,7 +782,7 @@ func (c *BitcoindClient) onRescanFinished(hash *chainhash.Hash, height int32,
 // reorg processes a reorganization during chain synchronization. This is
 // separate from a rescan's handling of a reorg. This will rewind back until it
 // finds a common ancestor and notify all the new blocks since then.
-func (c *BitcoindClient) reorg(currentBlock waddrmgr.BlockStamp,
+func (c *BrocoindClient) reorg(currentBlock waddrmgr.BlockStamp,
 	reorgBlock *wire.MsgBlock) error {
 
 	// Retrieve the best known height based on the block which caused the
@@ -914,7 +914,7 @@ func (c *BitcoindClient) reorg(currentBlock waddrmgr.BlockStamp,
 // returned response will be nil.
 //
 // NOTE: This is part of the chain.Interface interface.
-func (c *BitcoindClient) FilterBlocks(
+func (c *BrocoindClient) FilterBlocks(
 	req *FilterBlocksRequest) (*FilterBlocksResponse, error) {
 
 	blockFilterer := NewBlockFilterer(c.chainParams, req)
@@ -955,12 +955,12 @@ func (c *BitcoindClient) FilterBlocks(
 	return nil, nil
 }
 
-// rescan performs a rescan of the chain using a bitcoind backend, from the
+// rescan performs a rescan of the chain using a brocoind backend, from the
 // specified hash to the best known hash, while watching out for reorgs that
 // happen during the rescan. It uses the addresses and outputs being tracked by
 // the client in the watch list. This is called only within a queue processing
 // loop.
-func (c *BitcoindClient) rescan(start chainhash.Hash) error {
+func (c *BrocoindClient) rescan(start chainhash.Hash) error {
 	// We start by getting the best already processed block. We only use
 	// the height, as the hash can change during a reorganization, which we
 	// catch by testing connectivity from known blocks to the previous
@@ -992,7 +992,7 @@ func (c *BitcoindClient) rescan(start chainhash.Hash) error {
 	}
 	headers.PushBack(previousHeader)
 
-	// Cycle through all of the blocks known to bitcoind, being mindful of
+	// Cycle through all of the blocks known to brocoind, being mindful of
 	// reorgs.
 	for i := previousHeader.Height + 1; i <= bestBlock.Height; i++ {
 		hash, err := c.GetBlockHash(int64(i))
@@ -1072,7 +1072,7 @@ func (c *BitcoindClient) rescan(start chainhash.Hash) error {
 					}
 				}
 			} else {
-				// Otherwise, we get it from bitcoind.
+				// Otherwise, we get it from brocoind.
 				previousHash, err = chainhash.NewHashFromStr(
 					previousHeader.PreviousHash,
 				)
@@ -1136,7 +1136,7 @@ func (c *BitcoindClient) rescan(start chainhash.Hash) error {
 
 // shouldFilterBlock determines whether we should filter a block based on its
 // timestamp or our watch list.
-func (c *BitcoindClient) shouldFilterBlock(blockTimestamp time.Time) bool {
+func (c *BrocoindClient) shouldFilterBlock(blockTimestamp time.Time) bool {
 	c.watchMtx.RLock()
 	hasEmptyFilter := len(c.watchedAddresses) == 0 &&
 		len(c.watchedOutPoints) == 0 && len(c.watchedTxs) == 0
@@ -1147,7 +1147,7 @@ func (c *BitcoindClient) shouldFilterBlock(blockTimestamp time.Time) bool {
 
 // filterBlock filters a block for watched outpoints and addresses, and returns
 // any matching transactions, sending notifications along the way.
-func (c *BitcoindClient) filterBlock(block *wire.MsgBlock, height int32,
+func (c *BrocoindClient) filterBlock(block *wire.MsgBlock, height int32,
 	notify bool) []*wtxmgr.TxRecord {
 
 	// If this block happened before the client's birthday or we have
@@ -1220,7 +1220,7 @@ func (c *BitcoindClient) filterBlock(block *wire.MsgBlock, height int32,
 
 // filterTx determines whether a transaction is relevant to the client by
 // inspecting the client's different filters.
-func (c *BitcoindClient) filterTx(tx *wire.MsgTx,
+func (c *BrocoindClient) filterTx(tx *wire.MsgTx,
 	blockDetails *btcjson.BlockDetails,
 	notify bool) (bool, *wtxmgr.TxRecord, error) {
 

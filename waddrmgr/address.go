@@ -112,7 +112,7 @@ type ManagedPubKeyAddress interface {
 }
 
 // ManagedScriptAddress extends ManagedAddress and represents a pay-to-script-hash
-// style of bitcoin addresses.  It additionally provides information about the
+// style of brocoin addresses.  It additionally provides information about the
 // script.
 type ManagedScriptAddress interface {
 	ManagedAddress
@@ -359,7 +359,7 @@ func newManagedAddressWithoutPrivKey(m *ScopedKeyManager,
 
 	case NestedWitnessPubKey:
 		// For this address type we'l generate an address which is
-		// backwards compatible to Bitcoin nodes running 0.6.0 onwards, but
+		// backwards compatible to Brocoin nodes running 0.6.0 onwards, but
 		// allows us to take advantage of segwit's scripting improvments,
 		// and malleability fixes.
 

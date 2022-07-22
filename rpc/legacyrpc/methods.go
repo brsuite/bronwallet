@@ -147,7 +147,7 @@ func unimplemented(interface{}, *wallet.Wallet) (interface{}, error) {
 	}
 }
 
-// unsupported handles a standard bitcoind RPC request which is
+// unsupported handles a standard brocoind RPC request which is
 // unsupported by bronwallet due to design differences.
 func unsupported(interface{}, *wallet.Wallet) (interface{}, error) {
 	return nil, &btcjson.RPCError{
@@ -396,7 +396,7 @@ func dumpPrivKey(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 
 // dumpWallet handles a dumpwallet request by returning  all private
 // keys in a wallet, or an appropiate error if the wallet is locked.
-// TODO: finish this to match bitcoind by writing the dump to a file.
+// TODO: finish this to match brocoind by writing the dump to a file.
 func dumpWallet(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	keys, err := w.DumpPrivKeys()
 	if waddrmgr.IsError(err, waddrmgr.ErrLocked) {
@@ -715,7 +715,7 @@ func getNewAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 // getRawChangeAddress handles a getrawchangeaddress request by creating
 // and returning a new change address for an account.
 //
-// Note: bitcoind allows specifying the account as an optional parameter,
+// Note: brocoind allows specifying the account as an optional parameter,
 // but ignores the parameter.
 func getRawChangeAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	cmd := icmd.(*btcjson.GetRawChangeAddressCmd)
@@ -1524,7 +1524,7 @@ func sendToAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 		cmd.Address: amt,
 	}
 
-	// sendtoaddress always spends from the default account, this matches bitcoind
+	// sendtoaddress always spends from the default account, this matches brocoind
 	return sendPairs(w, pairs, waddrmgr.DefaultAccountNum, 1,
 		txrules.DefaultRelayFeePerKb)
 }
@@ -1558,7 +1558,7 @@ func signMessage(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	}
 
 	var buf bytes.Buffer
-	wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
+	wire.WriteVarString(&buf, 0, "Brocoin Signed Message:\n")
 	wire.WriteVarString(&buf, 0, cmd.Message)
 	messageHash := chainhash.DoubleHashB(buf.Bytes())
 	sigbytes, err := btcec.SignCompact(btcec.S256(), privKey,
@@ -1843,7 +1843,7 @@ func verifyMessage(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	// Validate the signature - this just shows that it was valid at all.
 	// we will compare it with the key next.
 	var buf bytes.Buffer
-	wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
+	wire.WriteVarString(&buf, 0, "Brocoin Signed Message:\n")
 	wire.WriteVarString(&buf, 0, cmd.Message)
 	expectedMessageHash := chainhash.DoubleHashB(buf.Bytes())
 	pk, wasCompressed, err := btcec.RecoverCompact(btcec.S256(), sig,

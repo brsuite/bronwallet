@@ -255,7 +255,7 @@ func (s *Server) Stop() {
 }
 
 // SetChainServer sets the chain server client component needed to run a fully
-// functional bitcoin wallet RPC server.  This can be called to enable RPC
+// functional brocoin wallet RPC server.  This can be called to enable RPC
 // passthrough even before a loaded wallet is set, but the wallet's RPC client
 // is preferred.
 func (s *Server) SetChainServer(chainClient chain.Interface) {

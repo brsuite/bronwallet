@@ -18,42 +18,42 @@ import (
 
 const (
 	// rawBlockZMQCommand is the command used to receive raw block
-	// notifications from bitcoind through ZMQ.
+	// notifications from brocoind through ZMQ.
 	rawBlockZMQCommand = "rawblock"
 
 	// rawTxZMQCommand is the command used to receive raw transaction
-	// notifications from bitcoind through ZMQ.
+	// notifications from brocoind through ZMQ.
 	rawTxZMQCommand = "rawtx"
 
 	// maxRawBlockSize is the maximum size in bytes for a raw block received
-	// from bitcoind through ZMQ.
+	// from brocoind through ZMQ.
 	maxRawBlockSize = 4e6
 
 	// maxRawTxSize is the maximum size in bytes for a raw transaction
-	// received from bitcoind through ZMQ.
+	// received from brocoind through ZMQ.
 	maxRawTxSize = maxRawBlockSize
 
 	// seqNumLen is the length of the sequence number of a message sent from
-	// bitcoind through ZMQ.
+	// brocoind through ZMQ.
 	seqNumLen = 4
 )
 
-// BitcoindConn represents a persistent client connection to a bitcoind node
+// BrocoindConn represents a persistent client connection to a brocoind node
 // that listens for events read from a ZMQ connection.
-type BitcoindConn struct {
+type BrocoindConn struct {
 	started int32 // To be used atomically.
 	stopped int32 // To be used atomically.
 
 	// rescanClientCounter is an atomic counter that assigns a unique ID to
-	// each new bitcoind rescan client using the current bitcoind
+	// each new brocoind rescan client using the current brocoind
 	// connection.
 	rescanClientCounter uint64
 
-	// chainParams identifies the current network the bitcoind node is
+	// chainParams identifies the current network the brocoind node is
 	// running on.
 	chainParams *chaincfg.Params
 
-	// client is the RPC client to the bitcoind node.
+	// client is the RPC client to the brocoind node.
 	client *rpcclient.Client
 
 	// zmqBlockConn is the ZMQ connection we'll use to read raw block
@@ -64,22 +64,22 @@ type BitcoindConn struct {
 	// events.
 	zmqTxConn *gozmq.Conn
 
-	// rescanClients is the set of active bitcoind rescan clients to which
+	// rescanClients is the set of active brocoind rescan clients to which
 	// ZMQ event notfications will be sent to.
 	rescanClientsMtx sync.Mutex
-	rescanClients    map[uint64]*BitcoindClient
+	rescanClients    map[uint64]*BrocoindClient
 
 	quit chan struct{}
 	wg   sync.WaitGroup
 }
 
-// NewBitcoindConn creates a client connection to the node described by the host
+// NewBrocoindConn creates a client connection to the node described by the host
 // string. The ZMQ connections are established immediately to ensure liveness.
-// If the remote node does not operate on the same bitcoin network as described
+// If the remote node does not operate on the same brocoin network as described
 // by the passed chain parameters, the connection will be disconnected.
-func NewBitcoindConn(chainParams *chaincfg.Params,
+func NewBrocoindConn(chainParams *chaincfg.Params,
 	host, user, pass, zmqBlockHost, zmqTxHost string,
-	zmqPollInterval time.Duration) (*BitcoindConn, error) {
+	zmqPollInterval time.Duration) (*BrocoindConn, error) {
 
 	clientCfg := &rpcclient.ConnConfig{
 		Host:                 host,
@@ -96,7 +96,7 @@ func NewBitcoindConn(chainParams *chaincfg.Params,
 		return nil, err
 	}
 
-	// Establish two different ZMQ connections to bitcoind to retrieve block
+	// Establish two different ZMQ connections to brocoind to retrieve block
 	// and transaction event notifications. We'll use two as a separation of
 	// concern to ensure one type of event isn't dropped from the connection
 	// queue due to another type of event filling it up.
@@ -117,24 +117,24 @@ func NewBitcoindConn(chainParams *chaincfg.Params,
 			"events: %v", err)
 	}
 
-	conn := &BitcoindConn{
+	conn := &BrocoindConn{
 		chainParams:   chainParams,
 		client:        client,
 		zmqBlockConn:  zmqBlockConn,
 		zmqTxConn:     zmqTxConn,
-		rescanClients: make(map[uint64]*BitcoindClient),
+		rescanClients: make(map[uint64]*BrocoindClient),
 		quit:          make(chan struct{}),
 	}
 
 	return conn, nil
 }
 
-// Start attempts to establish a RPC and ZMQ connection to a bitcoind node. If
+// Start attempts to establish a RPC and ZMQ connection to a brocoind node. If
 // successful, a goroutine is spawned to read events from the ZMQ connection.
 // It's possible for this function to fail due to a limited number of connection
 // attempts. This is done to prevent waiting forever on the connection to be
 // established in the case that the node is down.
-func (c *BitcoindConn) Start() error {
+func (c *BrocoindConn) Start() error {
 	if !atomic.CompareAndSwapInt32(&c.started, 0, 1) {
 		return nil
 	}
@@ -156,9 +156,9 @@ func (c *BitcoindConn) Start() error {
 	return nil
 }
 
-// Stop terminates the RPC and ZMQ connection to a bitcoind node and removes any
+// Stop terminates the RPC and ZMQ connection to a brocoind node and removes any
 // active rescan clients.
-func (c *BitcoindConn) Stop() {
+func (c *BrocoindConn) Stop() {
 	if !atomic.CompareAndSwapInt32(&c.stopped, 0, 1) {
 		return
 	}
@@ -180,18 +180,18 @@ func (c *BitcoindConn) Stop() {
 // forwards them along to the current rescan clients.
 //
 // NOTE: This must be run as a goroutine.
-func (c *BitcoindConn) blockEventHandler() {
+func (c *BrocoindConn) blockEventHandler() {
 	defer c.wg.Done()
 
-	log.Info("Started listening for bitcoind block notifications via ZMQ "+
+	log.Info("Started listening for brocoind block notifications via ZMQ "+
 		"on", c.zmqBlockConn.RemoteAddr())
 
 	// Set up the buffers we expect our messages to consume. ZMQ
-	// messages from bitcoind include three parts: the command, the
+	// messages from brocoind include three parts: the command, the
 	// data, and the sequence number.
 	//
 	// We'll allocate a fixed data slice that we'll reuse when reading
-	// blocks from bitcoind through ZMQ. There's no need to recycle this
+	// blocks from brocoind through ZMQ. There's no need to recycle this
 	// slice (zero out) after using it, as further reads will overwrite the
 	// slice and we'll only be deserializing the bytes needed.
 	var (
@@ -264,7 +264,7 @@ func (c *BitcoindConn) blockEventHandler() {
 			c.rescanClientsMtx.Unlock()
 		default:
 			// It's possible that the message wasn't fully read if
-			// bitcoind shuts down, which will produce an unreadable
+			// brocoind shuts down, which will produce an unreadable
 			// event type. To prevent from logging it, we'll make
 			// sure it conforms to the ASCII standard.
 			if eventType == "" || !isASCII(eventType) {
@@ -282,18 +282,18 @@ func (c *BitcoindConn) blockEventHandler() {
 // them along to the current rescan clients.
 //
 // NOTE: This must be run as a goroutine.
-func (c *BitcoindConn) txEventHandler() {
+func (c *BrocoindConn) txEventHandler() {
 	defer c.wg.Done()
 
-	log.Info("Started listening for bitcoind transaction notifications "+
+	log.Info("Started listening for brocoind transaction notifications "+
 		"via ZMQ on", c.zmqTxConn.RemoteAddr())
 
 	// Set up the buffers we expect our messages to consume. ZMQ
-	// messages from bitcoind include three parts: the command, the
+	// messages from brocoind include three parts: the command, the
 	// data, and the sequence number.
 	//
 	// We'll allocate a fixed data slice that we'll reuse when reading
-	// transactions from bitcoind through ZMQ. There's no need to recycle
+	// transactions from brocoind through ZMQ. There's no need to recycle
 	// this slice (zero out) after using it, as further reads will overwrite
 	// the slice and we'll only be deserializing the bytes needed.
 	var (
@@ -366,7 +366,7 @@ func (c *BitcoindConn) txEventHandler() {
 			c.rescanClientsMtx.Unlock()
 		default:
 			// It's possible that the message wasn't fully read if
-			// bitcoind shuts down, which will produce an unreadable
+			// brocoind shuts down, which will produce an unreadable
 			// event type. To prevent from logging it, we'll make
 			// sure it conforms to the ASCII standard.
 			if eventType == "" || !isASCII(eventType) {
@@ -379,8 +379,8 @@ func (c *BitcoindConn) txEventHandler() {
 	}
 }
 
-// getCurrentNet returns the network on which the bitcoind node is running.
-func (c *BitcoindConn) getCurrentNet() (wire.BitcoinNet, error) {
+// getCurrentNet returns the network on which the brocoind node is running.
+func (c *BrocoindConn) getCurrentNet() (wire.BrocoinNet, error) {
 	hash, err := c.client.GetBlockHash(0)
 	if err != nil {
 		return 0, err
@@ -398,11 +398,11 @@ func (c *BitcoindConn) getCurrentNet() (wire.BitcoinNet, error) {
 	}
 }
 
-// NewBitcoindClient returns a bitcoind client using the current bitcoind
+// NewBrocoindClient returns a brocoind client using the current brocoind
 // connection. This allows us to share the same connection using multiple
 // clients.
-func (c *BitcoindConn) NewBitcoindClient() *BitcoindClient {
-	return &BitcoindClient{
+func (c *BrocoindConn) NewBrocoindClient() *BrocoindClient {
+	return &BrocoindClient{
 		quit: make(chan struct{}),
 
 		id: atomic.AddUint64(&c.rescanClientCounter, 1),
@@ -429,7 +429,7 @@ func (c *BitcoindConn) NewBitcoindClient() *BitcoindClient {
 // in its notification delivery.
 //
 // NOTE: This function is safe for concurrent access.
-func (c *BitcoindConn) AddClient(client *BitcoindClient) {
+func (c *BrocoindConn) AddClient(client *BrocoindClient) {
 	c.rescanClientsMtx.Lock()
 	defer c.rescanClientsMtx.Unlock()
 
@@ -441,7 +441,7 @@ func (c *BitcoindConn) AddClient(client *BitcoindClient) {
 // transaction notifications from the chain connection.
 //
 // NOTE: This function is safe for concurrent access.
-func (c *BitcoindConn) RemoveClient(id uint64) {
+func (c *BrocoindConn) RemoveClient(id uint64) {
 	c.rescanClientsMtx.Lock()
 	defer c.rescanClientsMtx.Unlock()
 

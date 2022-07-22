@@ -132,7 +132,7 @@ var FastScryptOptions = ScryptOptions{
 }
 
 // addrKey is used to uniquely identify an address even when those addresses
-// would end up being the same bitcoin address (as is the case for
+// would end up being the same brocoin address (as is the case for
 // pay-to-pubkey and pay-to-pubkey-hash style of addresses).
 type addrKey string
 

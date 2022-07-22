@@ -4,18 +4,18 @@ bronwallet
 [![Build Status](https://travis-ci.org/brsuite/bronwallet.png?branch=master)](https://travis-ci.org/brsuite/bronwallet)
 [![Build status](https://ci.appveyor.com/api/projects/status/88nxvckdj8upqr36/branch/master?svg=true)](https://ci.appveyor.com/project/jrick/bronwallet/branch/master)
 
-bronwallet is a daemon handling bitcoin wallet functionality for a
+bronwallet is a daemon handling brocoin wallet functionality for a
 single user.  It acts as both an RPC client to brond and an RPC server
 for wallet clients and legacy RPC applications.
 
 Public and private keys are derived using the hierarchical
 deterministic format described by
-[BIP0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki).
+[BIP0032](https://github.com/brocoin/bips/blob/master/bip-0032.mediawiki).
 Unencrypted private keys are not supported and are never written to
 disk.  bronwallet uses the
 `m/44'/<coin type>'/<account>'/<branch>/<address index>`
 HD path for all derived addresses, as described by
-[BIP0044](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki).
+[BIP0044](https://github.com/brocoin/bips/blob/master/bip-0044.mediawiki).
 
 Due to the sensitive nature of public data in a BIP0032 wallet,
 bronwallet provides the option of encrypting not just private keys, but
@@ -31,12 +31,12 @@ bronwallet is not an SPV client and requires connecting to a local or
 remote brond instance for asynchronous blockchain queries and
 notifications over websockets.  Full brond installation instructions
 can be found [here](https://github.com/brsuite/brond).  An alternative
-SPV mode that is compatible with brond and Bitcoin Core is planned for
+SPV mode that is compatible with brond and Brocoin Core is planned for
 a future release.
 
 Wallet clients can use one of two RPC servers:
 
-  1. A legacy JSON-RPC server mostly compatible with Bitcoin Core
+  1. A legacy JSON-RPC server mostly compatible with Brocoin Core
 
      The JSON-RPC server exists to ease the migration of wallet applications
      from Core, but complete compatibility is not guaranteed.  Some portions of

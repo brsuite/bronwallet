@@ -476,7 +476,7 @@ func (net *netParams) ReadFrom(r io.Reader) (int64, error) {
 		return n64, err
 	}
 
-	switch wire.BitcoinNet(binary.LittleEndian.Uint32(uint32Bytes)) {
+	switch wire.BrocoinNet(binary.LittleEndian.Uint32(uint32Bytes)) {
 	case wire.MainNet:
 		*net = (netParams)(chaincfg.MainNetParams)
 	case wire.TestNet3:
@@ -1256,7 +1256,7 @@ func (s *Store) Address(a bronutil.Address) (WalletAddress, error) {
 	return btcaddr, nil
 }
 
-// Net returns the bitcoin network parameters for this key store.
+// Net returns the brocoin network parameters for this key store.
 func (s *Store) Net() *chaincfg.Params {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
@@ -2765,7 +2765,7 @@ type scriptAddress struct {
 }
 
 // ScriptAddress is an interface representing a Pay-to-Script-Hash style of
-// bitcoind address.
+// brocoind address.
 type ScriptAddress interface {
 	WalletAddress
 	// Returns the script associated with the address.

@@ -53,7 +53,7 @@ import (
 var byteOrder = binary.BigEndian
 
 // This package makes assumptions that the width of a chainhash.Hash is always
-// 32 bytes.  If this is ever changed (unlikely for bitcoin, possible for alts),
+// 32 bytes.  If this is ever changed (unlikely for brocoin, possible for alts),
 // offsets have to be rewritten.  Use a compile-time assertion that this
 // assumption holds true.
 var _ [32]byte = chainhash.Hash{}

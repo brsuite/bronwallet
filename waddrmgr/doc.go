@@ -144,12 +144,12 @@ examining the ErrorCode field of the type asserted ManagerError.  For certain
 error codes, as documented by the specific error codes, the underlying error
 will be contained in the Err field.
 
-Bitcoin Improvement Proposals
+Brocoin Improvement Proposals
 
 This package includes concepts outlined by the following BIPs:
 
-		BIP0032 (https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
-		BIP0043 (https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki)
-		BIP0044 (https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)
+		BIP0032 (https://github.com/brocoin/bips/blob/master/bip-0032.mediawiki)
+		BIP0043 (https://github.com/brocoin/bips/blob/master/bip-0043.mediawiki)
+		BIP0044 (https://github.com/brocoin/bips/blob/master/bip-0044.mediawiki)
 */
 package waddrmgr

@@ -52,7 +52,7 @@ type config struct {
 	Create        bool                    `long:"create" description:"Create the wallet if it does not exist"`
 	CreateTemp    bool                    `long:"createtemp" description:"Create a temporary simulation wallet (pass=password) in the data directory indicated; must call with --datadir"`
 	AppDataDir    *cfgutil.ExplicitString `short:"A" long:"appdata" description:"Application data directory for wallet config, databases and logs"`
-	TestNet3      bool                    `long:"testnet" description:"Use the test Bitcoin network (version 3) (default mainnet)"`
+	TestNet3      bool                    `long:"testnet" description:"Use the test Brocoin network (version 3) (default mainnet)"`
 	SimNet        bool                    `long:"simnet" description:"Use the simulation test network (default mainnet)"`
 	NoInitialLoad bool                    `long:"noinitialload" description:"Defer wallet creation/opening on startup and enable loading wallets over RPC"`
 	DebugLevel    string                  `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical}"`
